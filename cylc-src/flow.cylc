@@ -1,12 +1,15 @@
 [scheduler]
+    allow implicit tasks = False
 [scheduling]
     cycling mode = integer
     [[graph]]
         R1 = """
-            init => setup => model
+            init => model?
+            model:fail? => restore
         """
         P1 = """
-            model[-P1] => setup => model
+            model[-P1]:succeed? => model?
+            model:fail? => restore
         """
 [runtime]
     [[init]]
