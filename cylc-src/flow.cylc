@@ -1,0 +1,18 @@
+[scheduler]
+[scheduling]
+    cycling mode = integer
+    [[graph]]
+        R1 = """
+            init => setup => model
+        """
+        P1 = """
+            model[-P1] => setup => model
+        """
+[runtime]
+    [[init]]
+    [[setup]]
+    [[model]]
+    [[isFinished]]
+    [[save]]
+    [[restore]]
+    [[end]]
