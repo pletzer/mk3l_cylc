@@ -4,12 +4,11 @@
     cycling mode = integer
     [[graph]]
         R1 = """
-            init => model?
-            model:fail? => restore
+            model => isFinished?
         """
         P1 = """
-            model[-P1]:succeed? => model?
-            model:fail? => restore
+            isFinished[-P1]:fail? => model => isFinished?
+            isFinished:succeed? => end
         """
 [runtime]
     [[init]]
