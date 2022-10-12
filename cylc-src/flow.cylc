@@ -4,15 +4,15 @@
     cycling mode = integer
     [[graph]]
         R1 = """
-            model => isFinished?
+            model:succeed? => save => isFinished?
+            model:fail? => restore
         """
         P1 = """
-            isFinished[-P1]:fail? => model => isFinished?
+            isFinished[-P1]:fail? => model? => save => isFinished?
             isFinished:succeed? => end
+            model:fail? => restore
         """
 [runtime]
-    [[init]]
-    [[setup]]
     [[model]]
     [[isFinished]]
     [[save]]
