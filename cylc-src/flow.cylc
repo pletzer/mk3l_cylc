@@ -13,8 +13,72 @@
             model:fail? => restore
         """
 [runtime]
+    [[GLOBALS]]
+    script = """
+    run=picon
+    toprundir=/nesi/nobackup/pletzera/mk3l/run
+    topdatadir=/nesi/nobackup/pletzera/mk3l/data/
+    ROOT=ROOT /nesi/nobackup/pletzera/mk3l_builds/jul3
+    model=${ROOT}/version-1.2/core/bin/model
+    LASTYR="00010"
+    # restart and save intervals
+    REST_INTERVAL=1
+    SAVE_INTERVAL=1
+    # run directorries
+    copydir=$toprundir/$run/copy
+    rundir=$toprundir/$run/run
+    tmpdir=$toprundir/$run/tmp
+    # data directories
+    atdir=$topdatadir/$run/atmos
+    comdir=$topdatadir/$run/com
+    histdir=$topdatadir/$run/daily
+    outdir=$topdatadir/$run/out
+    restdir=$topdatadir/$run/restart
+   
+    logfile=log.$run
+    """
     [[model]]
+        inherit = GLOBALS
+        script = """
+        ulimit -s unlimited
+        export KMP_STACKSIZE=10M
+        export OMP_NUM_THREADS ${SLURM_CPUS_PER_TASK}
+        ml purge
+        ml intel/2017a zlib/1.2.11-intel-2017a
+
+        cd $rundir
+        year=$(cat year)
+        # year without leading zeros
+        yr=$(expr $year + 0)
+
+        mv ${run}.[eo]* $tmpdir
+        cp -p oflux.nc $copydir
+        cp -p orest.nc $copydir
+        cp -p rest.start $copydir
+
+        # Initialise log entry for this year
+        echo "YEAR $year" >> $logfile
+        echo "----------" >> $logfile
+        echo "Running on node `hostname`, using $OMP_NUM_THREADS cores..." >> $logfile
+
+        # Run model for one year
+        echo "Running model..." >> $logfile
+        $model < input > out.$
+        
+        # check that the run completed successfully
+        message=$(tail out.$year | grep termination)
+        if [ $message != "" ]; then
+            # normal termination
+            exit 0
+        fi
+        # error
+        exit 1
+        """
     [[isFinished]]
+        inherit = GLOBALS
     [[save]]
+        inherit = GLOBALS
     [[restore]]
+        inherit = GLOBALS
     [[end]]
+        inherit = GLOBALS
