@@ -39,19 +39,9 @@ tmpdir=/nesi/nobackup/pletzera/mk3l/run/picon/tmp2
 
     """
     [[model]]
-
       inherit = GLOBALS
       platform = slurm_platform
-      [[[directives]]]
-        --job=picon
-        --time=00-02:00:00
-        --mem=4gb
-        --cpus-per-task=4
-        --hint=nomultithread
-        --partition=milan
-
       script = """
-
 ml purge
 ml intel/2017a zlib/1.2.11-intel-2017a
 
@@ -100,6 +90,13 @@ fi
 # error
 exit 1
         """
+      [[[directives]]]
+        --job=picon
+        --time=00-02:00:00
+        --mem=4gb
+        --cpus-per-task=4
+        --hint=nomultithread
+        --partition=milan
     [[isFinished]]
         inherit = GLOBALS
         script = """
