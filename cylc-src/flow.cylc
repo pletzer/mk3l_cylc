@@ -12,6 +12,9 @@
             isFinished:succeed? => end
             model:fail? => restore
         """
+[platforms]
+    [[slurm_platform]]
+        job runner = slurm
 [runtime]
     [[GLOBALS]]
     script = """
@@ -34,15 +37,25 @@ SAVE_INTERVAL=1
 
     """
     [[model]]
-        inherit = GLOBALS
-        script = """
 
-        ml purge
-        ml intel/2017a zlib/1.2.11-intel-2017a
+      inherit = GLOBALS
+      platform = slurm_platform
+      [[[directives]]]
+        --job=picon
+        --time=00-02:00:00
+        --mem=4gb
+        --cpus-per-task=4
+        --hint=nomultithread
+        --partition=milan
 
-        ulimit -s unlimited
-        export KMP_STACKSIZE=10M
-        export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
+      script = """
+
+ml purge
+ml intel/2017a zlib/1.2.11-intel-2017a
+
+ulimit -s unlimited
+export KMP_STACKSIZE=10M
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 
 # Set names of run directories
 copydir=../copy2
@@ -81,14 +94,14 @@ echo "Running model..." >> $logfile
 $model < input > out.$year
 
         
-        # check that the run completed successfully
-        message=$(tail out.$year | grep termination)
-        if [ $message != "" ]; then
-            # normal termination
-            exit 0
-        fi
-        # error
-        exit 1
+# check that the run completed successfully
+message=$(tail out.$year | grep termination)
+if [ $message != "" ]; then
+    # normal termination
+    exit 0
+fi
+# error
+exit 1
         """
     [[isFinished]]
         inherit = GLOBALS
