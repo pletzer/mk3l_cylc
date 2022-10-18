@@ -12,7 +12,7 @@
             isFinished:succeed? => end
             model:fail? => restore
         """
-[platforms]
+[platform]
     [[slurm_platform]]
         job runner = slurm
 [runtime]
