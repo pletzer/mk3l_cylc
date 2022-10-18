@@ -15,55 +15,71 @@
 [runtime]
     [[GLOBALS]]
     script = """
-    run=picon
-    toprundir=/nesi/nobackup/pletzera/mk3l/run
-    topdatadir=/nesi/nobackup/pletzera/mk3l/data/
-    ROOT=ROOT /nesi/nobackup/pletzera/mk3l_builds/jul3
-    model=${ROOT}/version-1.2/core/bin/model
-    LASTYR="00010"
-    # restart and save intervals
-    REST_INTERVAL=1
-    SAVE_INTERVAL=1
-    # run directorries
-    copydir=$toprundir/$run/copy
-    rundir=$toprundir/$run/run
-    tmpdir=$toprundir/$run/tmp
-    # data directories
-    atdir=$topdatadir/$run/atmos
-    comdir=$topdatadir/$run/com
-    histdir=$topdatadir/$run/daily
-    outdir=$topdatadir/$run/out
-    restdir=$topdatadir/$run/restart
-   
-    logfile=log.$run
+# Executable
+export ROOT=/nesi/nobackup/pletzera/mk3l_builds/jul3
+export LD_LIBRARY_PATH=${ROOT}/lib:${ROOT}/lib64:$LD_LIBRARY_PATH
+model=${ROOT}/version-1.2/core/bin/model
+
+# Run name
+run=picon
+
+# Duration of run, in years
+LASTYR="00001" # 10000
+
+# Interval over which to archive restart files, in years
+REST_INTERVAL=1
+
+# Interval over which to archive model output, in years
+SAVE_INTERVAL=1
+
     """
     [[model]]
         inherit = GLOBALS
         script = """
-        ulimit -s unlimited
-        export KMP_STACKSIZE=10M
-        export OMP_NUM_THREADS ${SLURM_CPUS_PER_TASK}
+
         ml purge
         ml intel/2017a zlib/1.2.11-intel-2017a
 
-        cd $rundir
-        year=$(cat year)
-        # year without leading zeros
-        yr=$(expr $year + 0)
+        ulimit -s unlimited
+        export KMP_STACKSIZE=10M
+        export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 
-        mv ${run}.[eo]* $tmpdir
-        cp -p oflux.nc $copydir
-        cp -p orest.nc $copydir
-        cp -p rest.start $copydir
+# Set names of run directories
+copydir=../copy2
+rundir=../run2
+tmpdir=../tmp2
 
-        # Initialise log entry for this year
-        echo "YEAR $year" >> $logfile
-        echo "----------" >> $logfile
-        echo "Running on node `hostname`, using $OMP_NUM_THREADS cores..." >> $logfile
+# Set names of data directories
+atdir=/nesi/nobackup/pletzera/mk3l/data/$run/atmos
+comdir=/nesi/nobackup/pletzera/mk3l/data/$run/com
+histdir=/nesi/nobackup/pletzera/mk3l/data/$run/daily
+outdir=/nesi/nobackup/pletzera/mk3l/data/$run/out
+restdir=/nesi/nobackup/pletzera/mk3l/data/$run/restart
 
-        # Run model for one year
-        echo "Running model..." >> $logfile
-        $model < input > out.$
+# Set name of logfile
+logfile=log.$run
+
+# Change to run directory
+cd $rundir
+
+# Set year number - $year may have leading zeroes, whereas $yr will not
+year=`cat year`
+yr=`expr $year + 0`
+
+# Save temporary copies of restart files
+cp -p oflux.nc $copydir
+cp -p orest.nc $copydir
+cp -p rest.start $copydir
+
+# Initialise log entry for this year
+echo "YEAR $year" >> $logfile
+echo "----------" >> $logfile
+echo "Running on node `hostname`, using $OMP_NUM_THREADS cores..." >> $logfile
+
+# Run model for one year
+echo "Running model..." >> $logfile
+$model < input > out.$year
+
         
         # check that the run completed successfully
         message=$(tail out.$year | grep termination)
@@ -86,26 +102,14 @@
         """
     [[save]]
         inherit = GLOBALS
-    [[restore]]
-        inherit = GLOBALS
         script = """
         cd $rundir
-        # clean the run 
-        rm fort.40
-        rm hist???????.$run.nc
-        # restore the files
-        cp -p $copydir/oflux.nc .
-        cp -p $copydir/orest.nc .
-        cp -p $copydir/rest.start .
-        """
-    [[end]]
-        inherit = GLOBALS
-        script = """
-        # Archive daily output of model every year
-        for month in 01 02 03 04 05 06 07 08 09 10 11 12; do
-           gzip hist${year}${month}.${run}.nc
-           chmod 444 hist${year}${month}.${run}.nc.gz
-        done
+
+# Archive daily output of model every year
+for month in 01 02 03 04 05 06 07 08 09 10 11 12; do
+  gzip hist${year}${month}.${run}.nc
+  chmod 444 hist${year}${month}.${run}.nc.gz
+done
 tar cf hist.${run}.${year}.tar hist${year}??.${run}.nc.gz
 chmod 444 hist.${run}.${year}.tar
 mv hist.${run}.${year}.tar $tmpdir
@@ -116,7 +120,7 @@ chmod 600 hist${year}??.${run}.nc.gz
 rm hist${year}??.${run}.nc.gz
 
 # Save restart files every REST_INTERVAL years
-if [ $(expr $yr % $REST_INTERVAL) == 0 ]; then
+if [ `expr $yr % $REST_INTERVAL` -eq 0 ]; then
   cp -p oflux.nc oflux.nc_${run}_$year
   cp -p orest.nc orest.nc_${run}_$year
   cp -p rest.end rest.start_${run}_$year
@@ -144,14 +148,10 @@ mv com.${run}.${year}.nc $tmpdir
 
 # Every SAVE_INTERVAL years, calculate annual means of ocean model output and
 # then archive all model output
-if [ $(expr $yr % $SAVE_INTERVAL) == 0 ]; then
+if [ `expr $yr % $SAVE_INTERVAL` -eq 0 ]; then
   yr2=$year
-  year1=$(expr $yr - $SAVE_INTERVAL + 1)
-  yr1=$year1
-  if [ $year1 -le 9999 ] yr1=0$year1
-  if [ $year1 -le 999 ] yr1=00$year1
-  if [ $year1 -le 99 ] yr1=000$year1
-  if [ $year1 -le 9 ] yr1=0000$year1
+  year1=`expr $yr - $SAVE_INTERVAL + 1`
+  yr1=`printf "%05d" $year1`
 
   # Compress and tar atmosphere model output, and then archive it
   gzip s*${run}.nc
@@ -174,7 +174,7 @@ if [ $(expr $yr % $SAVE_INTERVAL) == 0 ]; then
   # Compress and tar ocean model output, and then archive it
   chmod 444 com.${run}.?????.nc
   gzip com.${run}.?????.nc
-  set comtar = com.${run}.${yr1}-${yr2}.tar
+  comtar=com.${run}.${yr1}-${yr2}.tar
   tar cf $comtar com.${run}.?????.nc.gz
   chmod 444 $comtar
   mv com.$run $comtar $comdir
@@ -197,4 +197,35 @@ if [ $(expr $yr % $SAVE_INTERVAL) == 0 ]; then
   mv out.${run}.${yr1}-${yr2}.tar $outdir
   chmod 600 out.?????.gz
   rm out.?????.gz
+
+  # Change back to run directory
+  cd $rundir
+
+fi
+
+# Finalise log entry for this year
+echo "" >> $logfile
+
+# Increment year number
+yrnext=`expr $year + 1`
+yrp1=$yrnext
+yrp1=`printf "%5d" $yrnext`
+rm year
+echo $yrp1 > year
+
+
         """
+    [[restore]]
+        inherit = GLOBALS
+        script = """
+        cd $rundir
+        # clean the run 
+        rm fort.40
+        rm hist???????.$run.nc
+        # restore the files
+        cp -p $copydir/oflux.nc .
+        cp -p $copydir/orest.nc .
+        cp -p $copydir/rest.start .
+        """
+    [[end]]
+
