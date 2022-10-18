@@ -12,9 +12,6 @@
             isFinished:succeed? => end
             model:fail? => restore
         """
-[platform]
-    [[slurm_platform]]
-        job runner = slurm
 [runtime]
     [[GLOBALS]]
     script = """
@@ -34,6 +31,11 @@ REST_INTERVAL=1
 
 # Interval over which to archive model output, in years
 SAVE_INTERVAL=1
+
+# Set names of run directories
+rundir=/nesi/nobackup/pletzera/mk3l/run/picon/run2
+copydir=/nesi/nobackup/pletzera/mk3l/run/picon/copy2
+tmpdir=/nesi/nobackup/pletzera/mk3l/run/picon/tmp2
 
     """
     [[model]]
@@ -56,11 +58,6 @@ ml intel/2017a zlib/1.2.11-intel-2017a
 ulimit -s unlimited
 export KMP_STACKSIZE=10M
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
-
-# Set names of run directories
-copydir=../copy2
-rundir=../run2
-tmpdir=../tmp2
 
 # Set names of data directories
 atdir=/nesi/nobackup/pletzera/mk3l/data/$run/atmos
