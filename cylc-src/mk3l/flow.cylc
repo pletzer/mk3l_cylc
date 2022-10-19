@@ -14,10 +14,10 @@
         """
 [runtime]
     [[GLOBALS]]
-    script = """
+       [[[environment]]]
 # Executable
-export ROOT=/nesi/nobackup/pletzera/mk3l_builds/jul3
-export LD_LIBRARY_PATH=${ROOT}/lib:${ROOT}/lib64:$LD_LIBRARY_PATH
+ROOT=/nesi/nobackup/pletzera/mk3l_builds/jul3
+LD_LIBRARY_PATH=${ROOT}/lib:${ROOT}/lib64:$LD_LIBRARY_PATH
 model=${ROOT}/version-1.2/core/bin/model
 
 # Run name
@@ -37,10 +37,9 @@ rundir=/nesi/nobackup/pletzera/mk3l/run/picon/run2
 copydir=/nesi/nobackup/pletzera/mk3l/run/picon/copy2
 tmpdir=/nesi/nobackup/pletzera/mk3l/run/picon/tmp2
 
-    """
     [[model]]
       inherit = GLOBALS
-      platform = slurm_platform
+      platform = mahuika-slurm
       script = """
 ml purge
 ml intel/2017a zlib/1.2.11-intel-2017a
@@ -48,6 +47,8 @@ ml intel/2017a zlib/1.2.11-intel-2017a
 ulimit -s unlimited
 export KMP_STACKSIZE=10M
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
+
+echo "===== run=$run rundir=$rundir copydir=$copydir ====="
 
 # Set names of data directories
 atdir=/nesi/nobackup/pletzera/mk3l/data/$run/atmos
