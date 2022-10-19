@@ -37,19 +37,6 @@ rundir=/nesi/nobackup/pletzera/mk3l/run/picon/run2
 copydir=/nesi/nobackup/pletzera/mk3l/run/picon/copy2
 tmpdir=/nesi/nobackup/pletzera/mk3l/run/picon/tmp2
 
-    [[model]]
-      inherit = GLOBALS
-      platform = mahuika-slurm
-      script = """
-ml purge
-ml intel/2017a zlib/1.2.11-intel-2017a
-
-ulimit -s unlimited
-export KMP_STACKSIZE=10M
-export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
-
-echo "===== run=$run rundir=$rundir copydir=$copydir ====="
-
 # Set names of data directories
 atdir=/nesi/nobackup/pletzera/mk3l/data/$run/atmos
 comdir=/nesi/nobackup/pletzera/mk3l/data/$run/com
@@ -57,40 +44,10 @@ histdir=/nesi/nobackup/pletzera/mk3l/data/$run/daily
 outdir=/nesi/nobackup/pletzera/mk3l/data/$run/out
 restdir=/nesi/nobackup/pletzera/mk3l/data/$run/restart
 
-# Set name of logfile
-logfile=log.$run
-
-# Change to run directory
-cd $rundir
-
-# Set year number - $year may have leading zeroes, whereas $yr will not
-year=`cat year`
-yr=`expr $year + 0`
-
-# Save temporary copies of restart files
-cp -p oflux.nc $copydir
-cp -p orest.nc $copydir
-cp -p rest.start $copydir
-
-# Initialise log entry for this year
-echo "YEAR $year" >> $logfile
-echo "----------" >> $logfile
-echo "Running on node `hostname`, using $OMP_NUM_THREADS cores..." >> $logfile
-
-# Run model for one year
-echo "Running model..." >> $logfile
-$model < input > out.$year
-
-        
-# check that the run completed successfully
-message=$(tail out.$year | grep termination)
-if [ $message != "" ]; then
-    # normal termination
-    exit 0
-fi
-# error
-exit 1
-        """
+    [[model]]
+      inherit = GLOBALS
+      platform = mahuika-slurm
+      script = "bash run_model.sh"
       [[[directives]]]
         --job=picon
         --time=00-02:00:00
