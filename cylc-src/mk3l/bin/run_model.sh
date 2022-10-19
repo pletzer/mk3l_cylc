@@ -7,8 +7,6 @@ export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 
 echo "===== run=$run rundir=$rundir copydir=$copydir ====="
 
-# Set name of logfile
-logfile=log.$run
 
 echo "*** 1"
 
@@ -41,7 +39,7 @@ echo "*** 4"
  
 # check that the run completed successfully
 message=$(tail out.$year | grep termination)
-if [ $message != "" ]; then
+if [ "$message" != "" ]; then
     # normal termination
     exit 0
 fi
